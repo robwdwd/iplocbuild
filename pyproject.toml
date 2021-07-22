@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "iplocbuild"
+version = "1.0.0"
+description = ""
+authors = ["Rob Woodward <rob@emailplus.org>"]
+
+[tool.poetry.dependencies]
+python = "^3.4"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[tool.poetry.scripts]
+iplocbuild = "iplocbuild.cli:cli"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
