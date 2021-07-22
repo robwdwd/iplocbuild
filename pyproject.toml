@@ -1,8 +1,13 @@
 [tool.poetry]
 name = "iplocbuild"
 version = "1.0.0"
-description = ""
+description = "Command line too to generate IP Location files from routes found on network devices."
 authors = ["Rob Woodward <rob@emailplus.org>"]
+license = "BSD-2-Clause"
+readme = "README.md"
+repository = "https://github.com/robwdwd/iplocbuild"
+include = ["README.md", "LICENSE"]
+
 
 [tool.poetry.dependencies]
 python = "^3.6"
