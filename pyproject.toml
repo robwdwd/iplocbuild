@@ -5,10 +5,18 @@ description = ""
 authors = ["Rob Woodward <rob@emailplus.org>"]
 
 [tool.poetry.dependencies]
-python = "^3.4"
+python = "^3.6"
+netaddr = "^0.8.0"
+lxml = "^4.6.3"
+junos-eznc = "^2.6.2"
+click = "^8.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
+flake8 = "^3.9.2"
+pylint = "^2.9.5"
+pydocstyle = "^6.1.1"
+yapf = "^0.31.0"
 
 [tool.poetry.scripts]
 iplocbuild = "iplocbuild.cli:cli"
