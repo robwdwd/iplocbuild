@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Command to find routes on network devices and build IP location data."""
 
 import os
 import sys
@@ -22,7 +23,14 @@ paSpaceSet = IPSet([])
 
 
 def ipset_to_list(ipSetFrom):
-    """Convert IPSet to a list."""
+    """Convert an IP Set into a list.
+
+    Args:
+        ipSetFrom (IPSet): The IPSet to convert from
+
+    Returns:
+        list: List of IP Addresses
+    """
     toList = []
     for cidr in ipSetFrom.iter_cidrs():
         toList.append(str(cidr))
@@ -31,7 +39,18 @@ def ipset_to_list(ipSetFrom):
 
 
 def get_routes(host, communities, piSpace=False):
-    """Get routes from network device."""
+    """Get routes from a network device.
+
+    Args:
+        host (str): Hostname of device
+        communities (list): Communities to search for
+        piSpace (bool, optional): Find PI Space and carve out prefix if
+                                  external ASN. Defaults to False.
+
+    Returns:
+        tuple (IPSet, IPSet): Returns a tuble with an IP set with the prefixes
+                              and carved prefixes (Not annouced by our ASN.)
+    """
     try:
         with Device(
             host=host, user=cfg['username'], passwd=cfg['password'], transport='ssh', port='22', normalize=True
@@ -69,6 +88,8 @@ def get_routes(host, communities, piSpace=False):
                     continue
 
                 if piSpace:
+                    # If the CIDR is in our own PA Space but annouced by another ASN we need to carve it out.
+                    #
                     if cidr in paSpaceSet:
 
                         aspathMatch = aspathRE.match(rt.find('.//as-path').text)
@@ -80,6 +101,8 @@ def get_routes(host, communities, piSpace=False):
 
                         fullaspath = aspathMatch.group(1).split()
 
+                        # Not an internal prefix (our own allocation annoucement) but annouced by external ASN.
+                        #
                         if fullaspath[0] != 'I' and fullaspath[0] != '?':
                             carvedSet.add(cidr)
                             if verbose_level >= 1:
@@ -104,7 +127,15 @@ def get_routes(host, communities, piSpace=False):
 
 
 def process_routes(prefixSet, country, city, piSpace=False, carvedSpace=False):
-    """Process the routes."""
+    """Process the routes and allocate them to the cities.
+
+    Args:
+        prefixSet (IPSet): IP Prefix Set to process
+        country (str): Country to allocate the prefixes too
+        city (str): City to allocate the preofix set to
+        piSpace (bool, optional): Add to piSpace. Defaults to False.
+        carvedSpace (bool, optional): Add prefix to carved space. Defaults to False.
+    """
     global cities
 
     # Check if CIDR is in the cities lists
@@ -128,13 +159,14 @@ def process_routes(prefixSet, country, city, piSpace=False, carvedSpace=False):
                 print("{} belongs to correct city allocation: {}, {}".format(cidr, city, country))
             continue
 
-        # The range has come out of another countries allocation, find it.
+        # The range has come out of another countries allocation, find it and add to city
         #
         foundSupernet = False
         for snCity in cities:
             if cidr in cities[snCity]['base']:
                 foundSupernet = True
                 cities[snCity]['exclude'].add(cidr)
+                # In different city but annnouced by an external ASN.
                 if carvedSpace:
                     cities[city]['carvedSpace'].add(cidr)
                     if verbose_level >= 1:
@@ -165,10 +197,7 @@ def process_routes(prefixSet, country, city, piSpace=False, carvedSpace=False):
     type=click.File(mode='r')
 )
 @click.option(
-    '--verbose',
-    '-v',
-    count=True,
-    help="Output some debug information, use multiple times for increased verbosity."
+    '--verbose', '-v', count=True, help="Output some debug information, use multiple times for increased verbosity."
 )
 @click.option(
     "-o",
@@ -178,7 +207,6 @@ def process_routes(prefixSet, country, city, piSpace=False, carvedSpace=False):
 )
 def cli(config, verbose, outfile):
     """Entry point for command."""
-
     # Allow acces to cfg and verbose_level vars
     #
     global cfg
@@ -267,15 +295,31 @@ def cli(config, verbose, outfile):
         if verbose_level >= 1:
             print("Working on {}, {}, {}".format(city, country, community))
 
+        # Get internal and small prefix routes.
+        #
         prefixSet, carvedSet = get_routes(device, [community, '8220:65404'])
+
+        # prefixSet contains our allocation address space, add it to the correct country.
+        #
         if prefixSet is not None:
             process_routes(prefixSet, country, city)
+
+        # This should never fire off.
+        #
         if carvedSet is not None:
             process_routes(carvedSet, country, city, False, True)
 
+        # Get any prefixes annouced by external ASN.
+        #
         prefixSet, carvedSet = get_routes(device, [community, '8220:65403'], True)
+
+        # prefixSet contains all PI space annoucements.
         if prefixSet is not None:
             process_routes(prefixSet, country, city, True)
+
+        # carvedSet are routes advertised by another ASN but from our own allocation.
+        # Add them to the correct country but in the carvedSet.
+        #
         if carvedSet is not None:
             process_routes(carvedSet, country, city, True, True)
 
