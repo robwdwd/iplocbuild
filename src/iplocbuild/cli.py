@@ -167,8 +167,7 @@ def process_routes(prefixSet, country, city, piSpace=False, carvedSpace=False):
 @click.option(
     '--verbose',
     '-v',
-    action='count',
-    default=0,
+    count=True,
     help="Output some debug information, use multiple times for increased verbosity."
 )
 @click.option(
