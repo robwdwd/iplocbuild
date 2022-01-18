@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "iplocbuild"
-version = "1.0.3"
+version = "1.0.4"
 description = "Command line too to generate IP Location files from routes found on network devices."
 authors = ["Rob Woodward <rob@emailplus.org>"]
 license = "BSD-2-Clause"
@@ -12,7 +12,7 @@ include = ["README.md", "LICENSE"]
 [tool.poetry.dependencies]
 python = "^3.7"
 netaddr = "^0.8.0"
-lxml = "^4.6.3"
+lxml = "^4.6.5"
 junos-eznc = "^2.6.2"
 click = "^8.0.1"
 
